@@ -1,0 +1,18 @@
+[package]
+name = "bob-bsp"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+
+[dependencies]
+defmt = { version = "0.3.2", optional = true }
+embedded-hal = "=1.0.0-alpha.8"
+
+[dev-dependencies]
+test-case = "2.2.1"
+once_cell = "1.14.0"
+rand = "0.8.5"
+
+[features]
+default = []
+defmt = ["dep:defmt"]
