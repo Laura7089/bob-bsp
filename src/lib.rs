@@ -99,29 +99,34 @@ impl Peripherals {
     }
 }
 
-type I2C0SharedRC<'a> = embedded_hal_bus::i2c::RefCellDevice<'a, I2C0>;
+/// Onboard sensors using [`embedded_hal_bus::i2c::RefCellDevice`]
+pub mod sensors_rc {
+    use core::cell::RefCell;
 
-/// The [`hp203b::HP203B`] as it appears on Bob, using `RefCell` bus sharing
-pub type AltimeterRC<'a, M> = hp203b::HP203B<I2C0SharedRC<'a>, M, hp203b::csb::CSBHigh>;
+    type I2C0Shared<'a> = embedded_hal_bus::i2c::RefCellDevice<'a, super::I2C0>;
 
-/// Initialise all onboard sensors with [`embedded_hal_bus::i2c::RefCellDevice`]
-///
-/// This is a single method - it can only be called once.
-/// Returns a tuple of `(altimeter, accelerometer, magnetometer)`.
-// TODO: make a singleton somehow
-pub fn get_sensors(
-    i2c0: &RefCell<I2C0>,
-    alti_osr: hp203b::OSR,
-    alti_channel: hp203b::Channel,
-) -> Result<
-    (AltimeterRC<hp203b::mode::Pressure>,),
-    <I2C0SharedRC as embedded_hal::i2c::ErrorType>::Error,
-> {
-    let alti = {
-        let new_bus = I2C0SharedRC::new(i2c0);
-        hp203b::HP203B::new(new_bus, alti_osr, alti_channel)?
-    };
-    Ok((alti,))
+    /// The [`hp203b::HP203B`] as it appears on Bob, using `RefCell` bus sharing
+    pub type Altimeter<'a, M> = hp203b::HP203B<I2C0Shared<'a>, M, hp203b::csb::CSBHigh>;
+
+    /// Initialise all onboard sensors
+    ///
+    /// This is a single method - it can only be called once.
+    /// Returns a tuple of `(altimeter, accelerometer, magnetometer)`.
+    // TODO: make a singleton somehow
+    pub fn get_sensors(
+        i2c0: &RefCell<super::I2C0>,
+        alti_osr: hp203b::OSR,
+        alti_channel: hp203b::Channel,
+    ) -> Result<
+        (Altimeter<hp203b::mode::Pressure>,),
+        <I2C0Shared as embedded_hal::i2c::ErrorType>::Error,
+    > {
+        let alti = {
+            let new_bus = I2C0Shared::new(i2c0);
+            hp203b::HP203B::new(new_bus, alti_osr, alti_channel)?
+        };
+        Ok((alti,))
+    }
 }
 
 #[cfg(test)]
