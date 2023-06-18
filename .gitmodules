@@ -1,0 +1,3 @@
+[submodule "lib/hp203b-rs"]
+	path = lib/hp203b-rs
+	url = git@github.com:Laura7089/hp203b-rs.git

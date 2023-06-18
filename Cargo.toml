@@ -7,6 +7,7 @@ license = "MPL-2.0"
 [dependencies]
 defmt = { version = "0.3.2", optional = true }
 embedded-hal = "=1.0.0-alpha.8"
+hp203b = { path = "./lib/hp203b-rs" }
 
 [dev-dependencies]
 test-case = "2.2.1"
