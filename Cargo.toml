@@ -5,6 +5,8 @@ edition = "2021"
 license = "MPL-2.0"
 
 [dependencies]
+cortex-m = "0.7.7"
+cortex-m-rt = "0.7.3"
 defmt = { version = "0.3.2", optional = true }
 embedded-hal = "=1.0.0-alpha.8"
 hp203b = { path = "./lib/hp203b-rs" }
@@ -17,3 +19,4 @@ rand = "0.8.5"
 [features]
 default = []
 defmt = ["dep:defmt"]
+critical-section = ["cortex-m/critical-section"]
