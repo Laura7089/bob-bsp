@@ -12,6 +12,8 @@
 // TODO: pass through cortex-m{,-rt} crates?
 // TODO: pyro channels
 
+pub use hp203b::{Altitude, Channel as AltiChannel, Pressure, Temperature, HP203B, OSR as AltiOSR};
+
 #[cfg(test)]
 mod tests {
     use super::*;

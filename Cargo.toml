@@ -5,11 +5,10 @@ edition = "2021"
 license = "MPL-2.0"
 
 [dependencies]
-cortex-m = "0.7.7"
-cortex-m-rt = "0.7.3"
 defmt = { version = "0.3.2", optional = true }
-embedded-hal = "=1.0.0-alpha.8"
+embedded-hal = "=1.0.0-alpha.10"
 hp203b = { path = "./lib/hp203b-rs" }
+rp2040-hal = { version = "0.8.2", features = ["eh1_0_alpha"] }
 
 [dev-dependencies]
 test-case = "2.2.1"
@@ -18,5 +17,5 @@ rand = "0.8.5"
 
 [features]
 default = []
-defmt = ["dep:defmt"]
-critical-section = ["cortex-m/critical-section"]
+defmt = ["dep:defmt", "rp2040-hal/defmt"]
+critical-section = ["rp2040-hal/critical-section-impl"]
