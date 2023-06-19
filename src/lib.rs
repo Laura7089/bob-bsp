@@ -6,9 +6,10 @@
 //! Essentially, this is a wrapper around [`rp2040_hal`] and the crates for the sensors available
 //! on Bob.
 #![no_std]
-#![deny(unsafe_code)]
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
+#![cfg_attr(not(feature = "boot2"), forbid(unsafe_code))]
+#![cfg_attr(feature = "boot2", deny(unsafe_code))]
 
 /// The linker will place this boot block at the start of our program image. We
 /// need this to help the ROM bootloader get our code up and running.
