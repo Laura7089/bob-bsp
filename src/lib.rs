@@ -20,9 +20,7 @@ pub static BOOT2_FIRMWARE: [u8; 256] = rp2040_boot2::BOOT_LOADER_W25Q080;
 
 // TODO: magnetometer
 // TODO: accelerometer
-// TODO: buzzer
 // TODO: flash (perhaps an embedded-storage impl?)
-// TODO: pyro channels
 // TODO: can we do anything with the screw terminal?
 
 // TODO: pass through cortex-m{,-rt} crates?
