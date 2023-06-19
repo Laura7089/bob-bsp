@@ -5,6 +5,7 @@ edition = "2021"
 license = "MPL-2.0"
 
 [dependencies]
+cfg-if = "1.0.0"
 defmt = { version = "0.3.2", optional = true }
 embedded-hal = "=1.0.0-alpha.10"
 embedded-hal-bus = "0.1.0-alpha.2"
@@ -19,7 +20,9 @@ once_cell = "1.14.0"
 rand = "0.8.5"
 
 [features]
-default = []
+default = ["boot2", "rev3"]
 defmt = ["dep:defmt", "rp2040-hal/defmt", "fugit/defmt"]
 critical-section = ["rp2040-hal/critical-section-impl"]
 boot2 = ["dep:rp2040-boot2"]
+rev3 = []
+rev4 = []

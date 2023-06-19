@@ -6,17 +6,21 @@
 //! Essentially, this is a wrapper around [`rp2040_hal`] and the crates for the sensors available
 //! on Bob.
 #![no_std]
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
 
 /// The linker will place this boot block at the start of our program image. We
 /// need this to help the ROM bootloader get our code up and running.
+#[allow(unsafe_code)]
 #[cfg(feature = "boot2")]
 #[link_section = ".boot2"]
 #[no_mangle]
 #[used]
 pub static BOOT2_FIRMWARE: [u8; 256] = rp2040_boot2::BOOT_LOADER_W25Q080;
+
+#[cfg(all(feature = "rev3", feature = "rev4"))]
+compile_error!("Cannot enable both 'rev3' and 'rev4' features simultaneously");
 
 // TODO: magnetometer
 // TODO: accelerometer
