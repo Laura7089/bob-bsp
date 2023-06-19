@@ -82,6 +82,7 @@ use embedded_hal::pwm::SetDutyCycle;
 
 impl Buzzer {
     /// Create a new [`Buzzer`] with a set `frequency`
+    #[must_use]
     pub fn new(mut pwm: Pwm2, pin: BuzzerPwm, frequency: fugit::KilohertzU64) -> Self {
         // TODO: what is the clock rate of Bob?
         pwm.set_div_int(todo!());
@@ -124,6 +125,10 @@ pub mod sensors_rc {
     ///
     /// This is a singleton method - it can only be called once.
     /// Returns a tuple of `(altimeter, accelerometer, magnetometer)`.
+    ///
+    /// # Errors
+    ///
+    /// Forwards errors from [`hp203b::HP203B::new`], TODO and TODO.
     // TODO: make a singleton somehow
     pub fn get_sensors(
         i2c0: &RefCell<super::I2C0>,
