@@ -104,6 +104,7 @@ impl Buzzer {
     // }
 
     /// Set the frequency for the buzzer
+    #[cfg(feature = "micromath")]
     pub fn set_frequency(&mut self, frequency: KilohertzU32) {
         let divider = (CLOCK_RATE.to_kHz() as f32) / (frequency.to_kHz() as f32);
 
