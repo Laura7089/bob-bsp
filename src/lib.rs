@@ -1,10 +1,26 @@
-//! Board support package for [Bob](https://github.com/yorkaerospace/Bob) revision 3.
+//! Board support package for [Bob](https://github.com/yorkaerospace/Bob)
 //!
 //! The intention with this crate is that all the peripherals available on Bob as a board are
 //! available to software, and anything that is not available by default is discarded.
 //!
 //! Essentially, this is a wrapper around [`rp2040_hal`] and the crates for the sensors available
 //! on Bob.
+//!
+//! # Crate Features
+//!
+//! - `rev3`: configure for revision 3 of Bob, **incompatible with other revision features**
+//! - `rev4`: configure for revision 4 of Bob, **incompatible with other revision features**
+//! - `defmt`: enables logging with [`defmt`](https://github.com/knurling-rs/defmt) in both this crate and dependencies
+//! - `critical-section`: enables critical-section-based bus sharing for sensors; pair with
+//! `critical-section-impl` or provide a different implementation
+//! - `critical-section-impl`: enables the
+//! [`critical-section`](https://github.com/rust-embedded/critical-section) implementation in
+//! [`rp2040-hal`](https://github.com/rp-rs/rp-hal)
+//! - `boot2`: link in the second-stage bootloader from
+//! [`rp2040-boot2`](https://github.com/rp-rs/rp2040-boot2); requires a correct `*.x` linker
+//! script with a `.boot2` section, see the project template (TODO)
+//! - `micromath`: enable convenience methods that use the
+//! [`micromath`](https://github.com/tarcieri/micromath) crate
 #![no_std]
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
@@ -138,76 +154,48 @@ pub type I2C0 = hal::I2C<hal::pac::I2C0, (I2c0Sda, I2c0Scl)>;
 
 /// [`hp203b::HP203B`] as it appears on Bob
 ///
-/// `I` is a generic I2C argument to allow different types of bus sharing.
-/// See [`get_sensors_rc`] and TODO.
+/// `I` is generic to allow different types of bus sharing.
 pub type Altimeter<I, M> = hp203b::HP203B<I, M, hp203b::csb::CSBHigh>;
 
-mod sensors_rc {
-    use core::cell::RefCell;
-    use embedded_hal_bus::i2c::RefCellDevice;
+macro_rules! get_sensors_impl {
+    ($short:ident, $shared:ty, $wrapper:ty) => {
+        paste::paste! {
+            #[allow(non_camel_case_types)]
+            type [<I2C0_ $short __>]<'a> = $shared<'a, I2C0>;
 
-    type I2C0Shared<'a> = RefCellDevice<'a, super::I2C0>;
-
-    /// Initialise all onboard sensors
-    ///
-    /// The sensors are shared using [`embedded_hal_bus::i2c::RefCellDevice`].
-    /// This is a singleton method - it can only be called once.
-    /// Returns a tuple of `(altimeter, accelerometer, magnetometer)`.
-    ///
-    /// # Errors
-    ///
-    /// Forwards errors from [`hp203b::HP203B::new`], TODO and TODO.
-    // TODO: make a singleton somehow
-    pub fn get_sensors(
-        i2c0: &RefCell<super::I2C0>,
-        alti_osr: hp203b::OSR,
-        alti_channel: hp203b::Channel,
-    ) -> Result<
-        (super::Altimeter<I2C0Shared, hp203b::mode::Pressure>,),
-        <I2C0Shared as embedded_hal::i2c::ErrorType>::Error,
-    > {
-        let alti = {
-            let new_bus = I2C0Shared::new(i2c0);
-            hp203b::HP203B::new(new_bus, alti_osr, alti_channel)?
-        };
-        Ok((alti,))
-    }
+            #[doc = "Initialise all onboard sensors with a`" $shared "`"]
+            ///
+            /// Returns a tuple of `(altimeter, accelerometer, magnetometer)`.
+            /// This is a singleton method - it can only be called once.
+            /// For information on sharing and safety, see the `embedded-hal-bus` documentation.
+            ///
+            /// # Errors
+            ///
+            /// Forwards errors from [`hp203b::HP203B::new`], TODO and TODO.
+            // TODO: make a singleton somehow
+            pub fn [<get_sensors_ $short>](
+                i2c0: &$wrapper<I2C0>,
+                alti_osr: hp203b::OSR,
+                alti_channel: hp203b::Channel,
+            ) -> Result<
+                (Altimeter<[<I2C0_ $short __>], hp203b::mode::Pressure>,),
+                <[<I2C0_ $short __>] as embedded_hal::i2c::ErrorType>::Error,
+            > {
+                let alti = {
+                    let new_bus = [<I2C0_ $short __>]::new(i2c0);
+                    hp203b::HP203B::new(new_bus, alti_osr, alti_channel)?
+                };
+                Ok((alti,))
+            }
+        }
+    };
 }
-pub use sensors_rc::get_sensors as get_sensors_rc;
-
+use embedded_hal_bus::i2c::{CriticalSectionDevice, RefCellDevice};
+get_sensors_impl!(rc, RefCellDevice, core::cell::RefCell);
 #[cfg(feature = "critical-section")]
-mod sensors_cs {
-    use core::cell::RefCell;
-    use critical_section::Mutex;
-    use embedded_hal_bus::i2c::CriticalSectionDevice;
-
-    type I2C0Shared<'a> = CriticalSectionDevice<'a, super::I2C0>;
-
-    /// Initialise all onboard sensors
-    ///
-    /// The sensors are shared using [`embedded_hal_bus::i2c::CriticalSectionDevice`].
-    /// This is a singleton method - it can only be called once.
-    /// Returns a tuple of `(altimeter, accelerometer, magnetometer)`.
-    ///
-    /// # Errors
-    ///
-    /// Forwards errors from [`hp203b::HP203B::new`], TODO and TODO.
-    pub fn get_sensors(
-        i2c0: &Mutex<RefCell<super::I2C0>>,
-        alti_osr: hp203b::OSR,
-        alti_channel: hp203b::Channel,
-    ) -> Result<
-        (super::Altimeter<I2C0Shared, hp203b::mode::Pressure>,),
-        <I2C0Shared as embedded_hal::i2c::ErrorType>::Error,
-    > {
-        let alti = {
-            let new_bus = I2C0Shared::new(i2c0);
-            hp203b::HP203B::new(new_bus, alti_osr, alti_channel)?
-        };
-        Ok((alti,))
-    }
-}
-pub use sensors_cs::get_sensors as get_sensors_cs;
+type CSArg<I> = critical_section::Mutex<core::cell::RefCell<I>>;
+#[cfg(feature = "critical-section")]
+get_sensors_impl!(cs, CriticalSectionDevice, CSArg);
 
 #[cfg(test)]
 mod tests {}
