@@ -92,6 +92,7 @@ impl Buzzer {
         Self { pwm }
     }
 
+    // TODO
     // pub fn set_volume(&mut self, vol: u8) -> Result<(), E> {
     //     let max = self.pwm.channel_b.get_max_duty_cycle()?;
     //     let desired = (max / 100) * vol as u16;
@@ -138,11 +139,10 @@ pub type I2C0 = hal::I2C<hal::pac::I2C0, (I2c0Sda, I2c0Scl)>;
 /// [`hp203b::HP203B`] as it appears on Bob
 ///
 /// `I` is a generic I2C argument to allow different types of bus sharing.
-/// See [`sensors_rc`] and TODO.
+/// See [`get_sensors_rc`] and TODO.
 pub type Altimeter<I, M> = hp203b::HP203B<I, M, hp203b::csb::CSBHigh>;
 
-/// Onboard sensors using [`embedded_hal_bus::i2c::RefCellDevice`]
-pub mod sensors_rc {
+mod sensors_rc {
     use core::cell::RefCell;
     use embedded_hal_bus::i2c::RefCellDevice;
 
@@ -150,6 +150,7 @@ pub mod sensors_rc {
 
     /// Initialise all onboard sensors
     ///
+    /// The sensors are shared using [`embedded_hal_bus::i2c::RefCellDevice`].
     /// This is a singleton method - it can only be called once.
     /// Returns a tuple of `(altimeter, accelerometer, magnetometer)`.
     ///
@@ -172,6 +173,7 @@ pub mod sensors_rc {
         Ok((alti,))
     }
 }
+pub use sensors_rc::get_sensors as get_sensors_rc;
 
 #[cfg(test)]
 mod tests {}
