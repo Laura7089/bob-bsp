@@ -175,5 +175,39 @@ mod sensors_rc {
 }
 pub use sensors_rc::get_sensors as get_sensors_rc;
 
+#[cfg(feature = "critical-section")]
+mod sensors_cs {
+    use core::cell::RefCell;
+    use critical_section::Mutex;
+    use embedded_hal_bus::i2c::CriticalSectionDevice;
+
+    type I2C0Shared<'a> = CriticalSectionDevice<'a, super::I2C0>;
+
+    /// Initialise all onboard sensors
+    ///
+    /// The sensors are shared using [`embedded_hal_bus::i2c::CriticalSectionDevice`].
+    /// This is a singleton method - it can only be called once.
+    /// Returns a tuple of `(altimeter, accelerometer, magnetometer)`.
+    ///
+    /// # Errors
+    ///
+    /// Forwards errors from [`hp203b::HP203B::new`], TODO and TODO.
+    pub fn get_sensors(
+        i2c0: &Mutex<RefCell<super::I2C0>>,
+        alti_osr: hp203b::OSR,
+        alti_channel: hp203b::Channel,
+    ) -> Result<
+        (super::Altimeter<I2C0Shared, hp203b::mode::Pressure>,),
+        <I2C0Shared as embedded_hal::i2c::ErrorType>::Error,
+    > {
+        let alti = {
+            let new_bus = I2C0Shared::new(i2c0);
+            hp203b::HP203B::new(new_bus, alti_osr, alti_channel)?
+        };
+        Ok((alti,))
+    }
+}
+pub use sensors_cs::get_sensors as get_sensors_cs;
+
 #[cfg(test)]
 mod tests {}
