@@ -11,6 +11,19 @@
 #![cfg_attr(not(feature = "boot2"), forbid(unsafe_code))]
 #![cfg_attr(feature = "boot2", deny(unsafe_code))]
 
+// TODO: magnetometer
+// TODO: accelerometer
+// TODO: flash (perhaps an embedded-storage impl?)
+// TODO: can we do anything with the screw terminal?
+
+// TODO: pass through cortex-m{,-rt} crates?
+pub extern crate hp203b;
+pub extern crate rp2040_hal;
+
+use fugit::{KilohertzU32, MegahertzU32};
+use micromath::F32Ext;
+use rp2040_hal as hal;
+
 /// The linker will place this boot block at the start of our program image. We
 /// need this to help the ROM bootloader get our code up and running.
 #[allow(unsafe_code)]
@@ -22,17 +35,6 @@ pub static BOOT2_FIRMWARE: [u8; 256] = rp2040_boot2::BOOT_LOADER_W25Q080;
 
 #[cfg(all(feature = "rev3", feature = "rev4"))]
 compile_error!("Cannot enable both 'rev3' and 'rev4' features simultaneously");
-
-// TODO: magnetometer
-// TODO: accelerometer
-// TODO: flash (perhaps an embedded-storage impl?)
-// TODO: can we do anything with the screw terminal?
-
-// TODO: pass through cortex-m{,-rt} crates?
-pub extern crate hp203b;
-pub extern crate rp2040_hal;
-
-use rp2040_hal as hal;
 
 hal::bsp_pins! {
     #[allow(missing_docs)]
@@ -70,31 +72,28 @@ hal::bsp_pins! {
     },
 }
 
+/// Processor clock rate of Bob
+pub const CLOCK_RATE: MegahertzU32 = MegahertzU32::MHz(130);
+
 type Pwm2 = hal::pwm::Slice<hal::pwm::Pwm2, <hal::pwm::Pwm2 as hal::pwm::SliceId>::Reset>;
-type Pwm2B = hal::pwm::Channel<hal::pwm::Pwm2, hal::pwm::FreeRunning, hal::pwm::B>;
 
 /// Onboard buzzer
 pub struct Buzzer {
-    channel: Pwm2B,
+    pwm: Pwm2,
 }
 
 use embedded_hal::pwm::SetDutyCycle;
 
 impl Buzzer {
-    /// Create a new [`Buzzer`] with a set `frequency`
+    /// Create a new [`Buzzer`]
     #[must_use]
-    pub fn new(mut pwm: Pwm2, pin: BuzzerPwm, frequency: fugit::KilohertzU64) -> Self {
-        // TODO: what is the clock rate of Bob?
-        pwm.set_div_int(todo!());
-        pwm.set_div_frac(todo!());
-
-        let mut channel = pwm.channel_b;
-        channel.output_to(pin);
-        Self { channel }
+    pub fn new(mut pwm: Pwm2, pin: BuzzerPwm) -> Self {
+        pwm.channel_b.output_to(pin);
+        Self { pwm }
     }
 
     // pub fn set_volume(&mut self, vol: u8) -> Result<(), E> {
-    //     let max = self.channel.get_max_duty_cycle()?;
+    //     let max = self.pwm.channel_b.get_max_duty_cycle()?;
     //     let desired = (max / 100) * vol as u16;
     //     self.set_duty_cycle(desired)?;
     //     Ok(())
@@ -103,6 +102,33 @@ impl Buzzer {
     // pub fn mute(&mut self) -> Result<(), E> {
     //     self.set_duty_cycle_fully_off()
     // }
+
+    /// Set the frequency for the buzzer
+    pub fn set_frequency(&mut self, frequency: KilohertzU32) {
+        let divider = (CLOCK_RATE.to_kHz() as f32) / (frequency.to_kHz() as f32);
+
+        let div_int = divider.trunc();
+        let div_frac = divider.fract() * (2.0.powf(4.0));
+
+        self.pwm.set_div_int(div_int as u8);
+        self.pwm.set_div_frac(div_frac as u8);
+    }
+
+    /// Set the frequency for the buzzer with raw parts
+    ///
+    /// The RP2040's PWM slices allow a divider to be set to determine their frequency.
+    /// The divider is 8 integer bits and 4 fractional ones, and is divided into the clock rate
+    /// of the chip.
+    /// On Bob this is [`CLOCK_RATE`].
+    pub fn set_frequency_raw(&mut self, div_int: u8, div_frac: u8) {
+        self.pwm.set_div_int(div_int);
+        self.pwm.set_div_frac(div_frac);
+    }
+
+    /// Consume `self` and yield the pin and PWM slice
+    pub fn destroy(self) -> (Pwm2, BuzzerPwm) {
+        (self.pwm, todo!())
+    }
 }
 
 /// `i2c0` as exposed on Bob
