@@ -30,7 +30,6 @@
 // TODO: magnetometer
 // TODO: accelerometer
 // TODO: flash (perhaps an embedded-storage impl?)
-// TODO: can we do anything with the screw terminal?
 
 // TODO: pass through cortex-m{,-rt} crates?
 pub extern crate hp203b;
