@@ -30,6 +30,7 @@
 // TODO: magnetometer
 // TODO: accelerometer
 // TODO: flash (perhaps an embedded-storage impl?)
+// TODO: unsafe I2C implementation
 
 // TODO: pass through cortex-m{,-rt} crates?
 pub extern crate hp203b;
